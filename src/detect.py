@@ -33,8 +33,14 @@ FEATURES = ["cnn_max", "cnn_mean_top", "nh_max", "nh_order", "bn_bird", "bn_loca
 
 
 def load_cache(path) -> dict:
+    """Pretrained-model scores (<rec>.npz) plus our detector's (<rec>.cnn.npy)."""
+    from flightcall_cnn import FRAME_S
+    path = Path(path)
     with np.load(path, allow_pickle=False) as d:
-        return {k: d[k] for k in d.files}
+        c = {k: d[k] for k in d.files}
+    c["cnn"] = np.load(path.with_suffix(".cnn.npy"))
+    c["cnn_frame_s"] = FRAME_S
+    return c
 
 
 def _spans_from_mask(t, on, width):

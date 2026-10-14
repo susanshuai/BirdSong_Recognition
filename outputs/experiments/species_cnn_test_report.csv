@@ -1,0 +1,32 @@
+,precision,recall,f1-score,support
+American Redstart,0.954,0.957,0.956,720.0
+American Tree Sparrow,0.821,0.948,0.88,58.0
+Black-and-white Warbler,0.884,0.924,0.904,132.0
+Black-throated Blue Warbler,0.972,0.98,0.976,244.0
+Black-throated Green Warbler,0.4,0.8,0.533,5.0
+Canada Warbler,0.926,0.92,0.923,163.0
+Chipping Sparrow,0.927,0.955,0.941,266.0
+Cape May Warbler,0.82,0.828,0.824,203.0
+Common Yellowthroat,0.894,0.945,0.919,695.0
+Chestnut-sided Warbler,0.849,0.841,0.845,440.0
+Grasshopper Sparrow,0.872,0.915,0.893,82.0
+Hooded Warbler,0.761,0.946,0.843,37.0
+Indigo Bunting,0.897,0.919,0.908,322.0
+Magnolia Warbler,0.973,0.896,0.933,318.0
+Mourning Warbler,0.787,0.933,0.854,75.0
+Nashville Warbler,0.538,0.933,0.683,15.0
+Not a bird (noise / insect / tone),0.91,0.855,0.881,496.0
+Northern Waterthrush,0.508,0.803,0.622,76.0
+Ovenbird,0.892,0.912,0.902,570.0
+Palm Warbler,0.928,0.976,0.951,370.0
+Rose-breasted Grosbeak,0.903,0.933,0.918,30.0
+Savannah Sparrow,0.976,0.983,0.98,1173.0
+"Short double-banded upsweep (sparrow/bunting, species unknown)",0.956,0.939,0.947,3016.0
+Tennessee Warbler,1.0,0.516,0.681,31.0
+Wilson's Warbler,0.92,0.867,0.893,120.0
+White-throated Sparrow,0.979,0.984,0.982,870.0
+Yellow-rumped Warbler,0.832,0.833,0.832,718.0
+"Zeep-type call (warbler, species unknown)",0.954,0.932,0.943,3320.0
+accuracy,0.929,0.929,0.929,0.929
+macro avg,0.858,0.899,0.869,14565.0
+weighted avg,0.932,0.929,0.93,14565.0
