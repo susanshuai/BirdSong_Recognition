@@ -49,9 +49,95 @@ in one place (`CLIP_NAME` in `src/config.py`) if the team prefers another.
    0.5 s of padding is added, and the stretch is cut from the **denoised**
    audio, peak-normalized to -3 dBFS so faint calls are audible.
 
-## Results
+## Results (run of 2026-10-14, 30 recordings, 67.6 hours)
 
-_Filled in after the full run; see "Results" below._
+**Output:** 3,079 detections in 2,235 clips (1.6 GB), plus one
+`auto_detections.csv` per night folder and `outputs/detections.csv` for all.
+
+| Night folder | Hours | Detections | Clips | In full darkness |
+|---|---|---|---|---|
+| 2026_10_01 | 8.6 | 235 | 183 | 111 |
+| 2026_10_03 | 2.0 | 210 | 185 | 210 |
+| 2026_10_05 (incl. morning) | 12.1 | 772 | 593 | 214 |
+| 2026_10_06 | 12.8 | 578 | 390 | 94 |
+| 2026_10_07 (same night as 10_06, 2nd station?) | 13.2 | 797 | 460 | 127 |
+| 2026_10_09 (incl. afternoon & morning) | 18.9 | 487 | 424 | 46 |
+
+Most common labels in full darkness: Savannah Sparrow (166), ZEEP warbler call
+group (161), Palm Warbler (42), Swainson's Thrush (39), White-throated Sparrow
+(25), American Redstart (21), Common Yellowthroat (15). These fit early-October
+migration in New Jersey, but every label is a machine guess to be checked.
+
+### How good is it? ("AI report card")
+
+**1. On an expert-labelled night it never saw** (BirdVox unit 10, 8.2 h,
+6,839 calls). "Found" = share of the experts' calls that fall inside a
+detection; "real" = share of detections that contain a call.
+
+| Detector | Found | Real |
+|---|---|---|
+| Our flight-call detector (p>=0.9) | 93% | 85% |
+| Nighthawk (its official settings) | 94.5% | 88% |
+| BirdNET (p>=0.1) | 22% | 87% |
+| Perch v2 (p>=0.8) | 59% | 93% |
+| **Combined referee (used for the clips)** | **96.7%** | **87%** |
+
+Caveats: BirdVox nights are busy, which makes "real" easier than on a quiet
+night. Nighthawk may have been trained partly on BirdVox-area recordings (not
+confirmed), which would flatter its score here. Matching calls one-to-one
+(stricter), our detector finds 70% with 83% precision.
+
+**2. On the team's own hand-cut clips** (34 clips vs 400 random stretches of
+the same recordings; `exp2_summary_raw_audio.csv`):
+
+| Model | AUC | Clips found if 5% of random stretches may be flagged | ...if only 1% |
+|---|---|---|---|
+| BirdNET | 0.80 | 21% | 9% |
+| Perch v2 | 0.85 | 38-44% | 3% |
+| Nighthawk | 0.87 | 47% | 32% |
+| **Our detector** | **0.91** | **71%** | **47%** |
+
+The final pipeline found **26 of the 34** hand-cut clips
+(`outputs/manual_clip_check.csv`). Of the 8 missed: two look like non-birds on
+the spectrogram (`100326-221200` 3720-3732 is a broad car/plane "whoosh",
+4305-4311 is mostly cricket pulses), two show nothing visible (`100626-193652`
+5738, `100726-045604` 5835), and four are real but faint or unusual (the Canada
+Goose honk is below the flight-call pitch range; a faint dawn nuthatch; one
+morning song; `100726-014940` 6853).
+
+**3. Visual spot-check of 36 random night detections** (`outputs/review/`):
+~27 clear flight calls, 2 clear insects, ~7 too faint to judge, so roughly
+**75-85% of night clips are real calls**.
+
+**4. Species model** (our own, held-out recording sites): 92.9% accuracy;
+White-throated Sparrow 98%, Savannah Sparrow 98%, Palm Warbler 95%, Chipping
+Sparrow 94% (F1). Weak only for species with few training clips.
+
+### Known weak spots (useful for the kids' review)
+
+* **Katydids**: a perfectly regular train of identical chirps fools both our
+  detector and Nighthawk. Birds don't call like a metronome.
+* **Dawn chorus** (twilight rows): several birds sing at once, and the label
+  names the strongest one in that stretch, not necessarily the one you hear first.
+* "Unknown bird" and "... (family / group, species unknown)" are honest
+  answers: the models agree it's a bird but not which one.
+* Thrush species come only from Nighthawk and Perch; our species model was
+  trained on sparrows and warblers.
+
+### Reading `auto_detections.csv`
+
+| Column | Meaning |
+|---|---|
+| `clip_file` | the `_auto.WAV` file that contains this detection |
+| `clock_time`, `period` | local time; night (sun >12° below horizon), twilight, day |
+| `start`, `end` | seconds from the start of the original recording |
+| `best_label`, `label_support`, `models_agreeing` | the vote winner, its total vote, how many models named it |
+| `bird_prob` | referee's probability that this is a bird call |
+| `nighthawk`, `our_species_model`, `birdnet`, `perch` | each model's own guess (+ its score) |
+
+Sort by `bird_prob` or filter on `models_agreeing >= 2` to start with the
+surest clips; the "AI report card" in the plan is simply: of the clips the
+team checks, how many did the AI get right?
 
 ## Things we learned
 

@@ -1,0 +1,35 @@
+clip,team_label,found,auto_clip,auto_labels
+100326-221200-3720-3732.wav,,False,,
+100326-221200-4305-4311.wav,,False,,
+100526-081044_band-675-684.wav,,True,100526-081044-667-688_auto.WAV,Blue Jay
+100526-081044_band-1236-1245.wav,,True,100526-081044-1235-1262_auto.WAV,House Finch
+100526-081044_band-1241-1245.wav,,True,100526-081044-1235-1262_auto.WAV,House Finch
+100526-081044_band-2014-2023.wav,,False,,
+100526-081044_band-2133-2142.wav,,True,100526-081044-2132-2149_auto.WAV,Blue Jay
+100526-213546_band-802-804.wav,,True,100526-213546-801-805_auto.WAV,ZEEP group: Northern Waterthrush / Louisiana Waterthrush / Kentucky Warbler / Magnolia Warbler / Bay-breasted Warbler / Blackburnian Warbler / Blackpoll Warbler / Connecticut Warbler / Yellow Warbler / Cerulean Warbler / Worm-eating Warbler / Cape May Warbler / Red-faced Warbler (species unknown)
+100526-213546_band-836-837.wav,,True,100526-213546-834-838_auto.WAV,"Parulidae (family, species unknown)"
+100526-213546_band-875-878.wav,,True,100526-213546-874-879_auto.WAV,Savannah Sparrow
+100526-213546_band-972-974.wav,,True,100526-213546-968-978_auto.WAV,Savannah Sparrow
+100526-213546_band-1226-1232.wav,,True,100526-213546-1224-1228_auto.WAV; 100526-213546-1229-1233_auto.WAV,ZEEP group: Northern Waterthrush / Louisiana Waterthrush / Kentucky Warbler / Magnolia Warbler / Bay-breasted Warbler / Blackburnian Warbler / Blackpoll Warbler / Connecticut Warbler / Yellow Warbler / Cerulean Warbler / Worm-eating Warbler / Cape May Warbler / Red-faced Warbler (species unknown)
+100526-213546_band-1965-1966.wav,,True,100526-213546-1963-1970_auto.WAV,Northern Waterthrush
+100626-193652-3227-3229.wav,,True,100626-193652-3226-3230_auto.WAV,Rose-breasted Grosbeak
+100626-193652-5149-5155.wav,,True,100626-193652-5149-5151_auto.WAV; 100626-193652-5153-5155_auto.WAV,Swainson's Thrush
+100626-193652-5518-5520.wav,,True,100626-193652-5518-5521_auto.WAV,Rose-breasted Grosbeak
+100626-193652-5738-5743.wav,,False,,
+100626-193652-6773-6774.wav,,True,100626-193652-6772-6775_auto.WAV,Gray-cheeked Thrush
+100626-193652-6832-6833.wav,,True,100626-193652-6827-6835_auto.WAV,Savannah Sparrow
+100626-193652-7819-7820.wav,,True,100626-193652-7817-7821_auto.WAV,ZEEP group: Northern Waterthrush / Louisiana Waterthrush / Kentucky Warbler / Magnolia Warbler / Bay-breasted Warbler / Blackburnian Warbler / Blackpoll Warbler / Connecticut Warbler / Yellow Warbler / Cerulean Warbler / Worm-eating Warbler / Cape May Warbler / Red-faced Warbler (species unknown)
+100626-193652-7836-7837.wav,,True,100626-193652-7835-7838_auto.WAV,ZEEP group: Northern Waterthrush / Louisiana Waterthrush / Kentucky Warbler / Magnolia Warbler / Bay-breasted Warbler / Blackburnian Warbler / Blackpoll Warbler / Connecticut Warbler / Yellow Warbler / Cerulean Warbler / Worm-eating Warbler / Cape May Warbler / Red-faced Warbler (species unknown)
+100626-224316-2888-2889.wav,,True,100626-224316-2886-2890_auto.WAV,ZEEP group: Northern Waterthrush / Louisiana Waterthrush / Kentucky Warbler / Magnolia Warbler / Bay-breasted Warbler / Blackburnian Warbler / Blackpoll Warbler / Connecticut Warbler / Yellow Warbler / Cerulean Warbler / Worm-eating Warbler / Cape May Warbler / Red-faced Warbler (species unknown)
+100626-224316-6668-6670.wav,,True,100626-224316-6667-6671_auto.WAV,White-throated Sparrow
+100726-014940-1315-1316.wav,,True,100726-014940-1313-1318_auto.WAV,Ovenbird
+100726-014940-2256-2262-White-throated Sparrow.wav,White-throated Sparrow,True,100726-014940-2258-2263_auto.WAV,White-throated Sparrow
+100726-014940-6853-6859.wav,,False,,
+100726-045604-1433-1434-White-throated Sparrow.wav,White-throated Sparrow,True,100726-045604-1432-1436_auto.WAV,White-throated Sparrow
+100726-045604-5730-5733.wav,,True,100726-045604-5725-5739_auto.WAV,Unknown bird
+100726-045604-5734-5739-White-throated Sparrow.wav,White-throated Sparrow,True,100726-045604-5725-5739_auto.WAV,Northern Cardinal
+100726-045604-5743-5747-White-breasted Nuthatch.wav,White-breasted Nuthatch,False,,
+100726-045604-5749-5793.wav,,True,100726-045604-5748-5752_auto.WAV; 100726-045604-5758-5763_auto.WAV,Blue Jay; Northern Cardinal; Unknown bird
+100726-045604-5757-5760-Northern Cardinal.wav,Northern Cardinal,True,100726-045604-5758-5763_auto.WAV,Blue Jay
+100726-045604-5806-5808-Canada Goose.wav,Canada Goose,False,,
+100726-045604-5835-5838.wav,,False,,

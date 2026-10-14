@@ -42,11 +42,28 @@ def sun_elevation(dt_local) -> float:
 
 
 def period(elev: float) -> str:
-    return "night" if elev < -6 else ("twilight" if elev < 0 else "day")
+    """night = sun more than 12 deg below the horizon (birds rarely sing yet);
+    twilight = dawn/dusk (dawn chorus starts here); day = sun up."""
+    return "night" if elev < -12 else ("twilight" if elev < 0 else "day")
+
+
+def split_long(ev: pd.DataFrame) -> pd.DataFrame:
+    """Cut detections longer than a clip may be (continuous daytime song) into pieces."""
+    max_len = C.CLIP_MAX_S - 2 * C.CLIP_PAD_S - 1
+    rows = []
+    for _, r in ev.iterrows():
+        n = max(1, math.ceil((r.end - r.start) / max_len))
+        edges = np.linspace(r.start, r.end, n + 1)
+        for a, b in zip(edges[:-1], edges[1:]):
+            piece = r.copy()
+            piece["start"], piece["end"] = a, b
+            rows.append(piece)
+    return pd.DataFrame(rows).reset_index(drop=True)
 
 
 def group_into_clips(ev: pd.DataFrame, duration: float) -> list[tuple[int, int, list[int]]]:
-    """Merge detections closer than CLIP_MERGE_GAP_S; split bouts longer than CLIP_MAX_S."""
+    """Merge detections closer than CLIP_MERGE_GAP_S, never beyond CLIP_MAX_S.
+    Clip edges are whole seconds (like the hand-cut clips) inside the recording."""
     clips = []
     for i, r in ev.sort_values("start").iterrows():
         a, b = max(0.0, r.start - C.CLIP_PAD_S), min(duration, r.end + C.CLIP_PAD_S)
@@ -55,7 +72,15 @@ def group_into_clips(ev: pd.DataFrame, duration: float) -> list[tuple[int, int, 
             clips[-1][2].append(i)
         else:
             clips.append([a, b, [i]])
-    return [(int(math.floor(a)), int(math.ceil(b)), idx) for a, b, idx in clips]
+    last = int(math.floor(duration))
+    return [(int(math.floor(a)), min(int(math.ceil(b)), last), idx) for a, b, idx in clips]
+
+
+def remove_old_clips(rec):
+    """Delete this tool's earlier clips for one recording (only *_auto.WAV files)."""
+    for p in rec.path.parent.glob(f"{rec.stem}-*_auto.WAV"):
+        if p.name.endswith("_auto.WAV") and p.name.startswith(rec.stem + "-"):
+            p.unlink()
 
 
 class Labeler:
@@ -109,33 +134,52 @@ class Labeler:
         ev["our_species_model"], ev["our_species_prob"] = self.species_cnn(rec, ev.cnn_peak_s.values)
         ev["sun_elevation"] = [sun_elevation(rec.time_at(t)) for t in ev.start]
         ev["period"] = ev.sun_elevation.map(period)
-        ev["best_label"] = [best_label(r) for _, r in ev.iterrows()]
+        best = [best_label(r) for _, r in ev.iterrows()]
+        ev["best_label"] = [b[0] for b in best]
+        ev["label_support"] = [b[1] for b in best]
+        ev["models_agreeing"] = [b[2] for b in best]
         return ev
 
 
-def best_label(r) -> str:
-    """One readable label. Night: flight-call models first. Day: song models first."""
-    sp_ok = r.our_species_prob >= 0.6 and not str(r.our_species_model).startswith(("Not a bird", "Zeep", "Short"))
-    nh_species = r.nighthawk and "species unknown" not in r.nighthawk
-    if r.period != "day":
-        if nh_species and r.nighthawk_prob >= 0.5:
-            return r.nighthawk
-        if sp_ok:
-            return r.our_species_model
-        if r.birdnet and r.birdnet_score >= 0.5:
-            return r.birdnet
-        if r.nighthawk:
-            return r.nighthawk
-    else:
-        if r.birdnet and r.birdnet_score >= 0.5:
-            return r.birdnet
-        if r.perch and r.perch_logit >= 5:
-            return r.perch
-        if nh_species:
-            return r.nighthawk
-        if sp_ok:
-            return r.our_species_model
-    return "Unknown bird"
+NOT_SPECIES = ("Not a bird", "Zeep", "Short double")
+FLIGHT_CALL_WEIGHT = {"night": 1.0, "twilight": 0.5, "day": 0.3}
+MIN_SUPPORT = 0.5
+
+
+def label_votes(r) -> dict:
+    """Each model votes for its species, weighted by its confidence.
+
+    Flight-call specialists (Nighthawk, our species model) count fully in the
+    dark but less at dawn/dusk and in daylight, when most sounds are songs.
+    """
+    votes = {}
+    w_fc = FLIGHT_CALL_WEIGHT[r.period]
+
+    def add(name, w):
+        if isinstance(name, str) and name and w > 0:
+            votes[name] = votes.get(name, 0.0) + float(w)
+
+    if isinstance(r.nighthawk, str) and "species unknown" not in r.nighthawk:
+        add(r.nighthawk, w_fc * r.nighthawk_prob)
+    if not str(r.our_species_model).startswith(NOT_SPECIES):
+        add(r.our_species_model, w_fc * 0.8 * r.our_species_prob)
+    add(r.birdnet, min(1.0, 2 * r.birdnet_score))
+    if isinstance(r.perch_logit, float) and np.isfinite(r.perch_logit):
+        add(r.perch, 1 / (1 + np.exp(-1.5 * (r.perch_logit - 10))))
+    return votes
+
+
+def best_label(r) -> tuple[str, float, int]:
+    """(label, support, number of models agreeing)."""
+    votes = label_votes(r)
+    if votes:
+        name, support = max(votes.items(), key=lambda kv: kv[1])
+        if support >= MIN_SUPPORT:
+            n = sum(1 for m in (r.nighthawk, r.our_species_model, r.birdnet, r.perch) if m == name)
+            return name, support, n
+    if isinstance(r.nighthawk, str) and r.nighthawk:
+        return r.nighthawk, r.nighthawk_prob, 1
+    return "Unknown bird", 0.0, 0
 
 
 def write_clip(rec, denoiser, a, b, path: Path):
@@ -168,33 +212,37 @@ def main():
         if not cpath.exists():
             print(f"skip {rec.stem}: not scanned yet")
             continue
+        if not args.no_clips:
+            remove_old_clips(rec)
         ev = lab.events(rec, load_cache(cpath))
         if ev.empty:
             print(f"{rec.stem}: no detections")
             continue
+        ev = split_long(ev)
         ev.insert(0, "recording", rec.stem)
         ev.insert(1, "night", rec.night)
         ev["clock_time"] = [rec.time_at(t).strftime("%Y-%m-%d %H:%M:%S") for t in ev.start]
-        ev["clip"] = ""
+        ev["clip_file"] = ""
         for a, b, idx in group_into_clips(ev, rec.duration):
             name = C.CLIP_NAME.format(stem=rec.stem, start=a, end=b)
-            ev.loc[idx, "clip"] = name
+            ev.loc[idx, "clip_file"] = name
             if not args.no_clips:
                 write_clip(rec, lab.denoiser, a, b, rec.path.parent / name)
-        print(f"{rec.stem}: {len(ev)} detections in {ev.clip.nunique()} clips", flush=True)
+        print(f"{rec.stem}: {len(ev)} detections in {ev['clip_file'].nunique()} clips", flush=True)
         all_rows.append(ev)
 
     df = pd.concat(all_rows, ignore_index=True)
-    cols = ["night", "recording", "clip", "clock_time", "period", "start", "end", "best_label",
-            "bird_prob", "sources", "nighthawk", "nighthawk_prob", "our_species_model",
+    cols = ["night", "recording", "clip_file", "clock_time", "period", "start", "end", "best_label",
+            "label_support", "models_agreeing", "bird_prob", "sources", "nighthawk", "nighthawk_prob", "our_species_model",
             "our_species_prob", "birdnet", "birdnet_score", "perch", "perch_logit", "perch_top_any",
             "cnn_max", "nh_max", "bn_local", "pc_mass", "bn_noise", "sun_elevation"]
     df = df[cols].round(3)
     C.OUTPUT_DIR.mkdir(exist_ok=True)
     df.to_csv(C.OUTPUT_DIR / "detections.csv", index=False)
-    for night, d in df.groupby("night"):
-        d.to_csv(C.RECORDINGS_DIR / night / "auto_detections.csv", index=False)
-    print(f"total: {len(df)} detections, {df.clip.nunique()} clips")
+    if not args.no_clips:
+        for night, d in df.groupby("night"):
+            d.to_csv(C.RECORDINGS_DIR / night / "auto_detections.csv", index=False)
+    print(f"total: {len(df)} detections, {df['clip_file'].nunique()} clips")
 
 
 if __name__ == "__main__":

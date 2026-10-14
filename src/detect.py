@@ -148,14 +148,17 @@ def birdnet_label(c, a, b):
 
 
 def perch_label(c, a, b):
-    *_, pc_sci, pc_ebird, sci2common = _taxonomy()
+    """Perch's best bird among species BirdNET's range model expects here (Perch has no
+    location filter of its own and otherwise suggests e.g. European Robin)."""
+    _, bn_sci, bn_local, pc_sci, pc_ebird, sci2common = _taxonomy()
+    local_sci = {s for s, ok in zip(bn_sci, bn_local) if ok}
     m = (c["pc_t"] < b) & (c["pc_t"] + 5.0 > a)
     best, score, top_any = None, -1e9, None
     for idx_row, val_row in zip(c["pc_idx"][m], c["pc_val"][m]):
         if top_any is None:
             top_any = pc_sci[idx_row[0]]
         for i, v in zip(idx_row, val_row):
-            if pc_ebird[i] != "no_ebird_code" and float(v) > score:
+            if pc_sci[i] in local_sci and float(v) > score:
                 best, score = sci2common.get(pc_sci[i], pc_sci[i]), float(v)
                 break
     return best, score, top_any
