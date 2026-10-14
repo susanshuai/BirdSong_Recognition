@@ -1,7 +1,9 @@
 """Stage 2: combine the models' scores into bird events.
 
-1. Candidates: any stretch where at least one model is mildly interested
-   (low thresholds, so few real calls are missed).
+1. Candidates: any stretch where our detector, Nighthawk or BirdNET is
+   interested (lowish thresholds, so few real calls are missed). Perch is not
+   used to start candidates: on our recordings it scores almost every 5-s
+   window as "bird" (92% at 0.5), so it only contributes evidence.
 2. Evidence: for each candidate, every model's strongest score inside it.
 3. Referee ("stacker"): a logistic regression trained on a fully labelled
    BirdVox night turns the evidence into one probability that the candidate
@@ -25,7 +27,7 @@ import numpy as np
 import pandas as pd
 
 # Candidate thresholds (deliberately low: high recall).
-CAND = dict(cnn=0.3, nh=0.5, bn=0.3, pc=0.5)
+CAND = dict(cnn=0.3, nh=0.8, bn=0.3)
 MERGE_GAP_S = 0.3
 BIRDNET_KEEP = 0.7          # BirdNET local-species score that is always trusted
 FEATURES = ["cnn_max", "cnn_mean_top", "nh_max", "nh_order", "bn_bird", "bn_local",
@@ -81,7 +83,6 @@ def candidates(c: dict) -> pd.DataFrame:
     bn = c["bn_local"].astype(np.float32)
     spans += [(a, b, {"bn"}) for a, b in _spans_from_mask(c["bn_t"], bn >= CAND["bn"], 3.0)]
     pc = c["pc_bird_mass"].astype(np.float32)
-    spans += [(a, b, {"pc"}) for a, b in _spans_from_mask(c["pc_t"], pc >= CAND["pc"], 5.0)]
     merged = _merge(spans)
 
     rows = []
