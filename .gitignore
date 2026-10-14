@@ -4,7 +4,6 @@ data/*
 !data/download.py
 outputs/cache/
 outputs/*.log
-models/*.pt
 __pycache__/
 *.pyc
 *.npz
