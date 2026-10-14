@@ -1,9 +1,10 @@
 .venv/
 .venv-nighthawk/
-data/
+data/*
+!data/download.py
 outputs/cache/
-outputs/denoised/
+outputs/*.log
+models/*.pt
 __pycache__/
 *.pyc
-*.pt
 *.npz
