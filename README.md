@@ -14,6 +14,10 @@ E:\sensor_recording\2026_10_06\auto_detections.csv                  <- what is i
 start of the original recording, same as the hand-cut clips. The pattern is set
 in one place (`CLIP_NAME` in `src/config.py`) if the team prefers another.
 
+Full documentation: [docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md).
+Kids' team page (self-contained, works offline): `outputs/team_page/night_sky_listener.html`,
+rebuilt with `python src/build_team_page.py`.
+
 ## How it works (plain-language version)
 
 ```
@@ -162,7 +166,7 @@ VIRTUAL_ENV=.venv uv pip install torch torchaudio --index-url https://download.p
 VIRTUAL_ENV=.venv uv pip install --no-deps nighthawk
 python data/download.py                      # BirdVox training data (~8 GB, CC-BY-4.0)
 
-# train our two models (GPU, ~25 min + ~10 min)
+# train our two models (GPU, ~25 min + ~5 min)
 .venv/Scripts/python src/train_flightcall_cnn.py
 .venv/Scripts/python src/train_species_cnn.py
 

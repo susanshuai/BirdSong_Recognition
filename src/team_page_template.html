@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Night Sky Listener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one long night-sky story, read top to bottom; numbered steps because the order is real. */
+:root {
+  color-scheme: dark;
+  --sky: #0d1530;         /* page background: night sky */
+  --sky-2: #16203f;       /* raised panels */
+  --sky-3: #1f2b52;       /* tracks, borders */
+  --ink: #eef1fb;         /* main text */
+  --ink-2: #b4bcd8;       /* secondary text */
+  --moon: #f6d36b;        /* accent: moonlight */
+  --dusk: #8fa3e0;        /* supporting blue for other computers */
+  --yes: #6fd99a;
+  --no: #ff8d7e;
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", Verdana, system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", Consolas, ui-monospace, monospace;
+  --step--1: 0.92rem; --step-0: 1.1rem; --step-1: 1.35rem; --step-2: 1.8rem; --step-3: 2.6rem;
+  --radius: 14px;
+}
+* { box-sizing: border-box; }
+html { background: var(--sky); }
+body {
+  margin: 0; background: var(--sky); color: var(--ink);
+  font-family: var(--font-body); font-size: var(--step-0); line-height: 1.6;
+  padding-inline: 16px;
+}
+main { max-width: 980px; margin: 0 auto; padding-block: 24px 64px; display: grid; gap: 72px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.1; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); font-weight: 800; }
+h2 { font-size: var(--step-3); font-weight: 800; }
+h3 { font-size: var(--step-1); font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+.eyebrow { font-family: var(--font-data); font-size: var(--step--1); letter-spacing: .08em; text-transform: uppercase; color: var(--moon); }
+.muted { color: var(--ink-2); }
+.small { font-size: var(--step--1); }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 20px; }
+.stack { display: grid; gap: 12px; }
+
+/* sky of stars behind the hero */
+.hero { position: relative; display: grid; gap: 24px; padding-block: 24px 8px; }
+.hero canvas { position: absolute; inset: -24px -16px auto -16px; height: 320px; width: calc(100% + 32px); z-index: 0; pointer-events: none; }
+.hero > * { position: relative; z-index: 1; }
+.hero .lede { font-size: var(--step-1); max-width: 40ch; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.stat { background: var(--sky-2); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 2px; }
+.stat b { font-family: var(--font-display); font-size: 2.3rem; line-height: 1; color: var(--moon); font-variant-numeric: tabular-nums; }
+
+/* players */
+.player { background: var(--sky-2); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.spec { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+.spec .yaxis { display: flex; flex-direction: column; justify-content: space-between; font-family: var(--font-data); font-size: .72rem; color: var(--ink-2); text-align: right; padding-block: 2px; }
+.spec .pic { position: relative; border-radius: 8px; overflow: hidden; background: #000; aspect-ratio: 6 / 2.4; max-width: 100%; }
+.spec img { display: block; width: 100%; height: 100%; }
+.playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--moon); left: 0; opacity: 0; box-shadow: 0 0 8px var(--moon); }
+.playing .playhead { opacity: 1; }
+.xaxis { grid-column: 2; display: flex; justify-content: space-between; font-family: var(--font-data); font-size: .72rem; color: var(--ink-2); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button {
+  font: 700 var(--step--1)/1 var(--font-body); color: var(--sky); background: var(--moon);
+  border: 0; border-radius: 999px; padding: 11px 18px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center;
+}
+button.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--sky-3); }
+button:hover { filter: brightness(1.08); }
+button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+button svg { width: 14px; height: 14px; fill: currentColor; }
+
+.hero-player { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; align-items: center; }
+@media (max-width: 720px) { .hero-player { grid-template-columns: 1fr; } }
+
+/* steps */
+.steps { display: grid; gap: 28px; counter-reset: step; }
+.step { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 16px; }
+.step .num { width: 48px; height: 48px; border-radius: 50%; background: var(--sky-3); color: var(--moon); display: grid; place-items: center; font: 800 1.5rem/1 var(--font-display); }
+.step .body { display: grid; gap: 12px; min-width: 0; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.ears { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.ear { background: var(--sky-2); border-radius: var(--radius); padding: 16px; display: grid; gap: 6px; align-content: start; }
+.ear.ours { box-shadow: inset 0 0 0 2px var(--moon); }
+.tag { font-family: var(--font-data); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.ours .tag { color: var(--moon); }
+
+/* resources */
+.res { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.res > div { border-top: 2px solid var(--sky-3); padding-top: 12px; display: grid; gap: 6px; align-content: start; }
+.res b.big { font-family: var(--font-display); font-size: 1.9rem; color: var(--moon); line-height: 1; }
+
+/* gallery */
+.gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+.bird-head { display: grid; gap: 6px; justify-items: start; }
+.badge { font-family: var(--font-data); font-size: .72rem; padding: 3px 8px; border-radius: 999px; background: var(--sky-3); color: var(--ink-2); white-space: nowrap; }
+.badge.team { background: var(--moon); color: var(--sky); }
+
+/* report card */
+.cards2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.dots { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; max-width: 260px; }
+.dots i { aspect-ratio: 1; border-radius: 50%; background: var(--sky-3); }
+.dots i.on { background: var(--moon); }
+.card { background: var(--sky-2); border-radius: var(--radius); padding: 20px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.card .big { font-family: var(--font-display); font-size: 2.6rem; line-height: 1; color: var(--moon); }
+
+/* bar charts (HTML, drawn to one scale per chart) */
+.chart { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 12px; align-items: center; }
+.bar-row .lab { font-size: var(--step--1); text-align: right; line-height: 1.25; }
+.track { position: relative; height: 22px; }
+.bar { height: 22px; background: var(--dusk); border-radius: 0 4px 4px 0; min-width: 2px; }
+.bar.hi { background: var(--moon); }
+.track .val { position: absolute; top: 0; height: 22px; display: flex; align-items: center; padding-left: 8px; font-family: var(--font-data); font-size: .85rem; color: var(--ink); white-space: nowrap; }
+.chart .axis { border-left: 1px solid var(--sky-3); }
+.bar-row:hover .bar, .bar-row:focus-visible .bar { filter: brightness(1.15); }
+.bar-row:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 520px) { .bar-row { grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr); } }
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--sky); font-size: .85rem; padding: 6px 10px; border-radius: 8px; max-width: 240px; }
+
+/* quiz */
+.quiz { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+.answers { display: flex; flex-wrap: wrap; gap: 8px; }
+.answers button { background: var(--sky-3); color: var(--ink); }
+.answers button.right { background: var(--yes); color: var(--sky); }
+.answers button.wrong { background: var(--no); color: var(--sky); }
+.why { border-left: 3px solid var(--moon); padding-left: 12px; }
+
+/* missions */
+.missions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.mission { background: var(--sky-2); border-radius: var(--radius); padding: 18px; display: grid; gap: 6px; align-content: start; }
+.mission h3 { color: var(--moon); }
+
+dl.words { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 10px 20px; margin: 0; }
+dl.words dt { font-weight: 700; color: var(--moon); }
+dl.words dd { margin: 0; }
+@media (max-width: 560px) { dl.words { grid-template-columns: 1fr; } dl.words dd { margin-bottom: 8px; } }
+
+footer { border-top: 1px solid var(--sky-3); padding-top: 20px; display: grid; gap: 8px; }
+a { color: var(--moon); }
+@media (prefers-reduced-motion: reduce) { .playhead { box-shadow: none; } }
+</style>
+</head>
+<body>
+<main>
+
+<header class="hero">
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <p class="eyebrow">Tantalum 73 &middot; Night Sky Listener &middot; Update for the team &middot; Oct 14, 2026</p>
+  <h1>Who flew over our houses at night?</h1>
+  <p class="lede">Our bucket microphones listened to the sky for __HOURS__ hours. A computer helped us find the birds hiding in all that sound. Here is what it found!</p>
+  <div class="hero-player">
+    <div id="hero-player"></div>
+    <div class="stack">
+      <h3>Press play first</h3>
+      <p>This is a <b>Gray-cheeked Thrush</b> flying over us in the dark. It is on its way from the Arctic to South America. The team found this call by hand. The computer found it too, and was 99.99% sure of the bird's name.</p>
+      <p class="muted small">The picture is a <b>spectrogram</b>: time goes left to right, high notes are near the top. The bright squiggle is the bird.</p>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>__HOURS__</b><span>hours of night sky recorded (almost 3 whole days)</span></div>
+    <div class="stat"><b>__RECORDINGS__</b><span>long recordings from 6 nights</span></div>
+    <div class="stat"><b>__NIGHT_CALLS__</b><span>bird calls found in the dark</span></div>
+    <div class="stat"><b>__CLIPS__</b><span>short sound clips cut out for us to check</span></div>
+  </div>
+</header>
+
+<section aria-labelledby="how">
+  <p class="eyebrow">How it works</p>
+  <h2 id="how">How the computer listened, step by step</h2>
+  <div class="steps">
+
+    <div class="step"><div class="num">1</div><div class="body">
+      <h3>Record the sky</h3>
+      <p>A recorder sat in a bucket, pointing straight up, from evening until morning. Each night made a few huge sound files. Listening to all of them ourselves would take almost 3 days without sleeping!</p>
+    </div></div>
+
+    <div class="step"><div class="num">2</div><div class="body">
+      <h3>Clean up the sound</h3>
+      <p>Crickets and katydids buzz all night on the same notes. Cars and wind rumble low. A bird's flight call is quick: about one tenth of a second. So the computer turns down every sound that stays the same for a long time, and keeps the quick ones. Listen to the same moment before and after:</p>
+      <div class="pair">
+        <div class="stack"><p class="tag">Before: what the microphone heard</p><div id="ba-raw"></div></div>
+        <div class="stack"><p class="tag">After: cleaned up</p><div id="ba-clean"></div></div>
+      </div>
+      <p class="muted small">See the bright line at the bottom and the stripes near 4 kHz in the "before" picture? That's road rumble and crickets. In the "after" picture, only the bird (an American Redstart) is left.</p>
+    </div></div>
+
+    <div class="step"><div class="num">3</div><div class="body">
+      <h3>Four computer "ears" listen</h3>
+      <p>We asked four different computer programs to listen to every second. Each one gives a score: how sure it is that a bird is calling.</p>
+      <div class="ears">
+        <div class="ear ours"><span class="tag">Ours</span><h3>Our own detector</h3><p class="small">We trained it ourselves on 35,000 night calls that scientists marked. Best at quick night calls.</p></div>
+        <div class="ear"><span class="tag">Scientists' tool</span><h3>Nighthawk</h3><p class="small">Made by bird scientists just for night flight calls. Knows 82 kinds of birds.</p></div>
+        <div class="ear"><span class="tag">Cornell Lab</span><h3>BirdNET</h3><p class="small">Knows over 6,000 sounds, mostly songs that birds sing in the daytime.</p></div>
+        <div class="ear"><span class="tag">Google</span><h3>Perch v2</h3><p class="small">Knows birds, frogs and insects from all over the world.</p></div>
+      </div>
+    </div></div>
+
+    <div class="step"><div class="num">4</div><div class="body">
+      <h3>A referee decides: bird or not?</h3>
+      <p>The four ears don't always agree. A small "referee" program studied a night that scientists had already checked, call by call. It learned how much to trust each ear. Now it turns their four scores into one answer.</p>
+    </div></div>
+
+    <div class="step"><div class="num">5</div><div class="body">
+      <h3>The ears vote on the bird's name</h3>
+      <p>Each ear says which bird it thinks it is. When two, three or all four pick the same bird, we trust the name more. In the dark, the night-call experts get the biggest votes. In the morning, the song experts do. We also trained a second program of our own that learned the calls of 25 kinds of sparrows and warblers.</p>
+    </div></div>
+
+    <div class="step"><div class="num">6</div><div class="body">
+      <h3>Cut short clips for the team to check</h3>
+      <p>Every bird sound was cut into its own short file, cleaned up and made louder so it's easy to hear. All __CLIPS__ clips are saved next to our recordings, with a table that tells the time and every computer's guess. Now it's our turn to be the judges.</p>
+      <p class="mono small muted">Example name: 100626-193652-6772-6775_auto.WAV = recording 100626-193652, from second 6772 to second 6775.</p>
+    </div></div>
+
+  </div>
+</section>
+
+<section aria-labelledby="used">
+  <p class="eyebrow">What we used</p>
+  <h2 id="used">How did the computer learn birds?</h2>
+  <p>Computers learn a bit like we learn with flash cards. You show them thousands of examples with the right answer, and they slowly figure out the pattern. Here is what we gave ours:</p>
+  <div class="res">
+    <div><b class="big">35,000</b><h3>night calls marked by scientists</h3><p class="small muted">BirdVox: 6 fall nights recorded in New York state. Experts marked every flight call they heard.</p></div>
+    <div><b class="big">85,000</b><h3>short calls with bird names</h3><p class="small muted">BirdVox-ANAFCC: calls of sparrows, warblers and more from the American Northeast, each labelled with its bird.</p></div>
+    <div><b class="big">23 min</b><h3>to train our detector</h3><p class="small muted">A gaming computer with a strong graphics card practiced on those calls 20 times over.</p></div>
+    <div><b class="big">3 hours</b><h3>to listen to all our nights</h3><p class="small muted">The four computer ears listened about 20 times faster than real time.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="listen">
+  <p class="eyebrow">Listen</p>
+  <h2 id="listen">Our best night calls</h2>
+  <p>Put on headphones. Each call is very short, so press <b>Slow-mo</b> to hear it at half speed. That also makes the notes lower, the same trick scientists use. Watch the yellow line move across the picture while it plays.</p>
+  <div class="gallery" id="gallery"></div>
+</section>
+
+<section aria-labelledby="quiz-h">
+  <p class="eyebrow">Game</p>
+  <h2 id="quiz-h">Bird or bug?</h2>
+  <p>The computer is not always right. Listen and look, then choose. Can you beat it?</p>
+  <div class="quiz" id="quiz"></div>
+</section>
+
+<section aria-labelledby="results">
+  <p class="eyebrow">Results</p>
+  <h2 id="results">The computer's report card</h2>
+  <div class="cards2">
+    <div class="card">
+      <h3>Does it find the birds?</h3>
+      <p><span class="big">97</span> out of every 100 calls</p>
+      <div class="dots" id="dots-found" role="img" aria-label="97 of 100 dots filled"></div>
+      <p class="small muted">On a test night the computer had never heard, scientists had marked 6,839 calls. Our team's computer found 97 out of every 100.</p>
+    </div>
+    <div class="card">
+      <h3>When it says "bird!", is it right?</h3>
+      <p><span class="big">~80</span> out of every 100 clips</p>
+      <div class="dots" id="dots-right" role="img" aria-label="about 80 of 100 dots filled"></div>
+      <p class="small muted">We looked at 36 random night clips from our own recordings. About 4 out of 5 were real bird calls. The rest were insects or too faint to tell. That's why we need human judges!</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Our own detector found the most of the team's calls</h3>
+    <p class="small muted">The team cut 34 calls out by hand. We tested each computer on them, allowing only a few false alarms (5 out of 100 quiet moments). How many calls out of 100 did each one catch?</p>
+    <div class="chart" id="chart-detectors"></div>
+  </div>
+
+  <div class="card">
+    <h3>You and the computer agree</h3>
+    <p>The computer found <b>__TEAM_FOUND__ of the __TEAM_TOTAL__</b> calls the team cut by hand. Some of the ones it missed may not be birds at all. Try the third clip in the game above!</p>
+  </div>
+
+  <div class="card">
+    <h3>Birds heard most often in the dark</h3>
+    <p class="small muted">Number of calls with a bird name, sun far below the horizon. These are the computer's guesses, so we still check them.</p>
+    <div class="chart" id="chart-species"></div>
+  </div>
+
+  <div class="card">
+    <h3>Which night was busiest?</h3>
+    <p class="small muted">Bird calls per hour of darkness. On Oct 6&rarr;7 two recorders listened on the same night.</p>
+    <div class="chart" id="chart-nights"></div>
+  </div>
+</section>
+
+<section aria-labelledby="fools">
+  <p class="eyebrow">Still learning</p>
+  <h2 id="fools">What still fools the computer</h2>
+  <div class="missions">
+    <div class="mission"><h3>Katydids</h3><p class="small">A row of chirps that repeat like a ticking clock is an insect. Our computer sometimes calls it a bird.</p></div>
+    <div class="mission"><h3>The dawn chorus</h3><p class="small">Around sunrise many birds sing at once. The computer names the loudest one, maybe not the one you hear first.</p></div>
+    <div class="mission"><h3>Very quiet calls</h3><p class="small">Birds flying very high are faint. Some calls are too quiet for the computer, and for us.</p></div>
+    <div class="mission"><h3>Low honks</h3><p class="small">Our detector listens for high, quick calls. It missed the team's Canada Goose honk because it's low.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="next">
+  <p class="eyebrow">Next</p>
+  <h2 id="next">Your missions</h2>
+  <div class="missions">
+    <div class="mission"><h3>Helen</h3><p class="tag">Project lead + storyteller</p><p class="small">Pick the call that opens our presentation. Play it for the judges and ask them to guess the bird.</p></div>
+    <div class="mission"><h3>Aaron</h3><p class="tag">AI lead</p><p class="small">Run the AI report card: check 100 clips and mark each one &#x2705; bird, &#x1F914; maybe, or &#x274C; not a bird. How often was the computer right?</p></div>
+    <div class="mission"><h3>Alex</h3><p class="tag">Data + alert lead</p><p class="small">Compare our busiest nights with BirdCast's radar numbers for Mercer County. Do they go up and down together?</p></div>
+    <div class="mission"><h3>Molly</h3><p class="tag">Hardware lead</p><p class="small">Two recorders listened on Oct 6&rarr;7. Which one heard more birds? What could make our bucket station hear better?</p></div>
+    <div class="mission"><h3>Evelyn</h3><p class="tag">Sound detective + field log</p><p class="small">Learn the calls on this page. Then listen to the mystery clips and help the team decide what they are.</p></div>
+  </div>
+</section>
+
+<section aria-labelledby="words">
+  <p class="eyebrow">Word bank</p>
+  <h2 id="words">New words</h2>
+  <dl class="words">
+    <dt>Migration</dt><dd>A long trip birds take each spring and fall. Many songbirds fly at night.</dd>
+    <dt>Flight call</dt><dd>A very short sound a bird makes while flying, maybe to keep in touch with the flock.</dd>
+    <dt>Spectrogram</dt><dd>A picture of sound. Time goes left to right, high notes are at the top, loud sounds are bright.</dd>
+    <dt>kHz</dt><dd>Kilohertz, the unit for how high a note is. Most flight calls are between 2 and 10 kHz. The middle C on a piano is only about 0.26 kHz.</dd>
+    <dt>AI model</dt><dd>A computer program that learned a skill from lots of examples instead of being told the rules.</dd>
+    <dt>Training</dt><dd>Showing the model thousands of examples with the right answers, again and again, until it gets good.</dd>
+    <dt>Denoise</dt><dd>Cleaning up a recording by turning down the noise and keeping the interesting sounds.</dd>
+    <dt>False alarm</dt><dd>When the computer says "bird!" but it was really an insect, a car or nothing.</dd>
+  </dl>
+</section>
+
+<footer class="small muted">
+  <p>Made for Tantalum 73's Innovation Project (FIRST LEGO League, BIOGLOW season). Practice sounds from BirdVox and BirdVox-ANAFCC (CC-BY-4.0). Computer ears: Nighthawk (Van Doren et al.), BirdNET (Cornell Lab of Ornithology and TU Chemnitz), Perch v2 (Google DeepMind), plus our own two models.</p>
+  <p>This page has team members' names. Please keep it inside the team and don't post it online.</p>
+</footer>
+</main>
+<div id="tip" hidden></div>
+
+<script>
+const DATA = __PAGE_DATA__;
+
+/* ---------- stars ---------- */
+(function stars() {
+  const c = document.getElementById('stars'); const ctx = c.getContext('2d');
+  function draw() {
+    const w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio || 1;
+    c.width = w * dpr; c.height = h * dpr; ctx.scale(dpr, dpr);
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < Math.round(w * h / 2600); i++) {
+      const y = rnd() * h;
+      ctx.globalAlpha = (0.25 + rnd() * 0.6) * (1 - y / h);
+      ctx.fillStyle = '#eef1fb';
+      ctx.beginPath(); ctx.arc(rnd() * w, y, rnd() < 0.08 ? 1.6 : 0.8, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  draw(); window.addEventListener('resize', () => { c.getContext('2d').setTransform(1,0,0,1,0,0); draw(); });
+})();
+
+/* ---------- audio players with a moving playhead ---------- */
+let current = null;
+function stopCurrent() {
+  if (current) { current.audio.pause(); current.audio.currentTime = 0; current.el.classList.remove('playing'); current = null; }
+}
+const PLAY = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg>';
+function player(target, { audio, img, dur, label }) {
+  const el = document.createElement('div');
+  el.className = 'player';
+  const seconds = [0, dur / 2, dur].map(s => s.toFixed(1) + ' s');
+  el.innerHTML = `
+    <div class="spec">
+      <div class="yaxis" aria-hidden="true"><span>12 kHz</span><span>6</span><span>0</span></div>
+      <div class="pic"><img alt="Spectrogram of ${label}" src="${img}"><div class="playhead"></div></div>
+      <div class="xaxis" aria-hidden="true"><span>${seconds[0]}</span><span>${seconds[1]}</span><span>${seconds[2]}</span></div>
+    </div>
+    <div class="controls">
+      <button type="button" data-rate="1">${PLAY} Play</button>
+      <button type="button" class="ghost" data-rate="0.5">${PLAY} Slow-mo</button>
+    </div>`;
+  const a = new Audio(audio); a.preload = 'auto';
+  const head = el.querySelector('.playhead');
+  function tick() {
+    if (!current || current.audio !== a) return;
+    head.style.left = Math.min(100, (a.currentTime / (a.duration || dur)) * 100) + '%';
+    requestAnimationFrame(tick);
+  }
+  a.addEventListener('ended', () => { el.classList.remove('playing'); if (current && current.audio === a) current = null; });
+  el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    stopCurrent();
+    a.playbackRate = Number(b.dataset.rate);
+    a.preservesPitch = a.mozPreservesPitch = a.webkitPreservesPitch = false;
+    current = { audio: a, el };
+    el.classList.add('playing'); head.style.left = '0%';
+    a.play().then(() => requestAnimationFrame(tick)).catch(() => el.classList.remove('playing'));
+  }));
+  (typeof target === 'string' ? document.getElementById(target) : target).appendChild(el);
+  return el;
+}
+
+const g0 = DATA.gallery[0];
+player('hero-player', { audio: g0.audio, img: g0.img, dur: g0.dur, label: g0.name });
+player('ba-raw', { audio: DATA.before_after.raw_audio, img: DATA.before_after.raw_img, dur: DATA.before_after.dur, label: 'the raw recording' });
+player('ba-clean', { audio: DATA.before_after.clean_audio, img: DATA.before_after.clean_img, dur: DATA.before_after.dur, label: 'the cleaned recording' });
+
+/* ---------- gallery ---------- */
+const gal = document.getElementById('gallery');
+DATA.gallery.forEach(g => {
+  const wrap = document.createElement('article');
+  wrap.className = 'stack';
+  wrap.innerHTML = `
+    <div class="bird-head"><h3>${g.name}</h3>
+      ${g.team ? '<span class="badge team">the team found this one too</span>' : `<span class="badge">${g.agree}</span>`}</div>
+    <p class="mono small muted">${g.when}</p>`;
+  gal.appendChild(wrap);
+  player(wrap, g);
+  const f = document.createElement('p'); f.className = 'small'; f.textContent = g.fact; wrap.appendChild(f);
+});
+
+/* ---------- quiz ---------- */
+const quizEl = document.getElementById('quiz');
+const CHOICES = [['bird', 'Bird'], ['bug', 'Insect'], ['other', 'Something else']];
+DATA.quiz.forEach((q, i) => {
+  const wrap = document.createElement('article');
+  wrap.className = 'stack';
+  wrap.innerHTML = `<h3>Mystery sound ${i + 1}</h3>`;
+  quizEl.appendChild(wrap);
+  player(wrap, { ...q, label: 'mystery sound ' + (i + 1) });
+  const ans = document.createElement('div'); ans.className = 'answers';
+  const why = document.createElement('p'); why.className = 'why small'; why.hidden = true; why.textContent = q.why;
+  CHOICES.forEach(([key, text]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = text;
+    b.addEventListener('click', () => {
+      ans.querySelectorAll('button').forEach(x => x.classList.remove('right', 'wrong'));
+      b.classList.add(key === q.answer ? 'right' : 'wrong');
+      if (key !== q.answer) ans.querySelector(`[data-k="${q.answer}"]`).classList.add('right');
+      why.hidden = false;
+    });
+    b.dataset.k = key; ans.appendChild(b);
+  });
+  wrap.append(ans, why);
+});
+
+/* ---------- report-card dots ---------- */
+function dots(id, n) {
+  const el = document.getElementById(id);
+  for (let i = 0; i < 100; i++) { const d = document.createElement('i'); if (i < n) d.className = 'on'; el.appendChild(d); }
+}
+dots('dots-found', 97); dots('dots-right', 80);
+
+/* ---------- bar charts: one series each, one scale per chart, values labelled ---------- */
+const tip = document.getElementById('tip');
+function bars(id, rows, { max, unit = '' } = {}) {
+  const el = document.getElementById(id);
+  const top = max || Math.max(...rows.map(r => r.value));
+  rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'bar-row'; row.tabIndex = 0;
+    row.setAttribute('aria-label', `${r.label}: ${r.value}${unit}. ${r.detail || ''}`);
+    const pct = (r.value / top) * 100;
+    row.innerHTML = `<span class="lab">${r.label}</span>
+      <div class="track axis"><div class="bar${r.ours ? ' hi' : ''}" style="width:${pct}%"></div>
+      <span class="val" style="left:${Math.min(pct, 82)}%">${r.value}${unit}</span></div>`;
+    if (pct > 82) { const v = row.querySelector('.val'); v.style.left = 'auto'; v.style.right = '0'; v.style.paddingRight = '8px'; v.style.color = 'var(--sky)'; v.style.fontWeight = '500'; }
+    const show = e => { tip.textContent = r.detail || `${r.value}${unit}`; tip.hidden = false;
+      const b = row.getBoundingClientRect(); const x = e && e.clientX ? e.clientX : b.left + b.width / 2;
+      tip.style.left = Math.min(window.innerWidth - 250, x + 12) + 'px'; tip.style.top = (b.top - 34) + 'px'; };
+    row.addEventListener('mousemove', show); row.addEventListener('focus', show);
+    row.addEventListener('mouseleave', () => tip.hidden = true); row.addEventListener('blur', () => tip.hidden = true);
+    el.appendChild(row);
+  });
+}
+bars('chart-detectors', DATA.detectors, { max: 100 });
+bars('chart-species', DATA.species);
+bars('chart-nights', DATA.per_night.map(r => ({ ...r, ours: r.value === Math.max(...DATA.per_night.map(x => x.value)) })));
+window.addEventListener('scroll', () => tip.hidden = true, { passive: true });
+</script>
+</body>
+</html>
